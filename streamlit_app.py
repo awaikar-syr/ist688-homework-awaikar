@@ -6,8 +6,8 @@ st.title("HW Manager")
 
 # Add a menu to navigate between pages
 pages = {
-    "HW1": HWs.py,
-    "HW2": HWs.py,
+    "HW1": HW1.py,
+    "HW2": HW2.py,
 }
 
 # Sidebar for navigation
