@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title= "Lab2")
+st.set_page_config(page_title= "Homework Manager")
 
 # Show title and description.
 st.title("Ankit's Homework Manager")
