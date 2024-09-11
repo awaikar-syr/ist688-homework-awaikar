@@ -1,22 +1,12 @@
 import streamlit as st
+st.set_page_config(page_title= "Lab2")
 
-st.set_page_config(page_title="HW Manager")
+# Show title and description.
+st.title("Ankit's Homework Manager")
 
-st.title("HW Manager")
+hw1_page = st.Page("HW1.py", title="HW1")
+hw2_page = st.Page("HW2.py", title="HW2", default=True)
 
-# Add a menu to navigate between pages
-pages = {
-    "HW1": HW1.py,
-    "HW2": HW2.py,
-}
+pg = st.navigation([hw1_page, hw2_page])
 
-# Sidebar for navigation
-st.sidebar.title("HW Manager")
-selection = st.sidebar.radio("Go to", list(pages.keys()))
-
-# Run selected page
-page = pages[selection]
-page.app()
-
-
-
+pg.run()
