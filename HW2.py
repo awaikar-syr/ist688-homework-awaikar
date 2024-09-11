@@ -4,7 +4,7 @@ from openai import OpenAI
 st.title("This is HW 2")
 
 
-openai_api_key = st.secrets["OPENAI_KEY"] 
+openai_api_key = st.secrets["open_ai_key"] 
 
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
