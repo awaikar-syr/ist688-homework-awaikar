@@ -7,11 +7,8 @@ from anthropic.types.message import Message
 import google.generativeai as genai
 
 
-st.markdown('''**Enter URL**, :rainbow[Select LLM], :green[Select Summary Type], :blue-background[Select Language]''')
+st.markdown('''**Enter URL**, :rainbow[Select LLM], :green[Select Summary Type], :blue-background[Select Language] 	:wave:''')
 
-st.markdown('''
-    :red[Streamlit] :orange[can] :green[write] :blue[text] :violet[in]
-    :gray[pretty] :rainbow[colors] and :blue-background[highlight] text.''')
 #Function to read URL Content.
 def read_url_content(url):
 	try:
