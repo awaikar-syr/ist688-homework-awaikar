@@ -66,16 +66,15 @@ if url:
 	
 	if content and summary_type and language:
 		question = summary_type
-		messages = [
+		messages_openai = [
             {
                 "role": "user",
                 "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
-            }
-        ]
+            }]
 		if llm_model == "OPENAI":
 			stream = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=messages,
+            messages=messages_openai,
             stream=True,)
 			st.write_stream(stream)
 		elif llm_model =="Claude":
