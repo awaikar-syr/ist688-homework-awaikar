@@ -1,47 +1,78 @@
 import streamlit as st
 from openai import OpenAI
+import requests
+from bs4 import BeautifulSoup
 
 st.title("This is HW 2")
 
 
+#Function to read URL Content.
+def read_url_content(url):
+	try:
+		response = requests.get(url)
+		response.raise_for_status() # Raise an exception for HTTP errors
+		soup = BeautifulSoup(response.content, 'html.parser')
+		return soup.get_text()
+	except requests.RequestException as e:
+		print(f"Error reading {url}: {e}")
+		return None
+
+
 openai_api_key = st.secrets["open_ai_key"] 
 
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+# Create an OpenAI client.
+client = OpenAI(api_key=openai_api_key)
 
-    # Let the user upload a file via ⁠ st.file_uploader ⁠.
-    uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .md)", type=("txt", "md")
+# Let the user upload a URL ⁠.
+url = st.text_area(
+        "Upload a URL here:",
+        placeholder="Website URL for eg: www.google.com"
     )
 
-    # Ask the user for a question via ⁠ st.text_area ⁠.
-    question = st.text_area(
-        "Now ask a question about the document!",
-        placeholder="Can you give me a short summary?",
-        disabled=not uploaded_file,
-    )
+	
+# Ask the user for a question type via radibutton ⁠.
+question = "Can you please Summarise this for me:"
 
-    if uploaded_file and question:
+# Sidebar for selecting summary type (similar to your previous Lab2)
+ssummary_type = st.selectbox("Select Summary Type", ["Summarize the document in 100 words", "Summarize the document in 2 connecting paragraphs", "Summarize the document in 5 bullet points"])
 
-        # Process the uploaded file and question.
-        document = uploaded_file.read().decode()
-        messages = [
+# Step 8: Dropdown menu to select output language
+language = st.selectbox("Select Output Language", ["English", "French", "Spanish"])
+
+# Step 10: Option to select LLM models
+llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
+
+
+    # Step 6: Display summary
+#if st.button("Summarize"):
+#        if url:
+#            content = read_url_content(url)
+#            if content:
+#                # Logic to call the selected LLM's API to summarize content
+#                st.write(f"Summary of the URL: {url} (in {language})")
+#                # You'll need to implement the logic for interacting with the LLMs here
+
+ #       else:
+#            st.error("Please enter a valid URL.")
+
+if url: 
+	content = read_url_content(url)
+	if content and question:
+		messages = [
             {
                 "role": "user",
-                "content": f"Here's a document: {document} \n\n---\n\n {question}",
+                "content": f"Here's a document: {content} \n\n---\n\n {question}",
             }
         ]
-
-        # Generate an answer using the OpenAI API.
-        stream = client.chat.completions.create(
+		stream = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
             stream=True,
         )
+		st.write_stream(stream)
+		
+else:
+	
+	st.write("Enter a valid URL")
 
-        # Stream the response to the app using ⁠ st.write_stream ⁠.
-        st.write_stream(stream)
