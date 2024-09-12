@@ -4,6 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 from anthropic import Anthropic
 from anthropic.types.message import Message
+import google.generativeai as genai
+
 
 st.title("This is HW 2")
 
@@ -22,6 +24,7 @@ def read_url_content(url):
 
 openai_api_key = st.secrets["openai_api_key"] 
 claude_api_key = st.secrets["claude_api_key"] 
+google_api_key = st.secrets["google_api_key"] 
 
 # Create an OpenAI client.
 clientopenai = OpenAI(api_key=openai_api_key)
@@ -46,7 +49,7 @@ summary_type = st.selectbox("Select Summary Type", ["Summarize this document in 
 language = st.selectbox("Select Output Language", ["English", "French", "Spanish"])
 
 # Step 10: Option to select LLM models
-llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
+llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Google"])
 
 
 
@@ -64,6 +67,7 @@ if url:
         ]
 		messages_claude = [{'role': 'user', 
 		"content": f"Here's a document: {content} \n\n---\n\n {question} in {language}"}]
+		messages_google = f"Here's a document: {content} \n\n---\n\n {question} in {language}"
 		
 
 		if llm_model == "OpenAI":
@@ -84,12 +88,19 @@ if url:
 			answer = response.content[0].text
 			st.write(answer)
 			
-		elif llm_model == "Cohere":
+		elif llm_model == "Google":
 			#Enter code for Cohere using Cohere Syntax.
-			st.write("Cohere's  Response:")
+			st.write("Google's Gemini  Response:")
+			genai.configure(api_key=google_api_key)
+			model = genai.GenerativeModel('gemini-1.5-flash')
+			response = model.generate_content(messages_google)
+			st.write(response.text)
 else:
 	
 	st.write("Enter a valid URL")
+
+
+
 
 
 

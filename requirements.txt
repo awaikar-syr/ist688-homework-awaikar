@@ -3,3 +3,4 @@ openai
 requests
 bs4
 anthropic
+google-generativeai
