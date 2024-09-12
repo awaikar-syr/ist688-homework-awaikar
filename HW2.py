@@ -21,7 +21,8 @@ def read_url_content(url):
 openai_api_key = st.secrets["open_ai_key"] 
 
 
-
+# Create an OpenAI client.
+client = OpenAI(api_key=openai_api_key)
 
 # Let the user upload a URL ⁠.
 url = st.text_area(
@@ -59,8 +60,6 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 #FOR OPEN_AI
 
-# Create an OpenAI client.
-client = OpenAI(api_key=openai_api_key)
 
 if url: 
 	content = read_url_content(url)
