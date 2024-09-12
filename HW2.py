@@ -43,7 +43,7 @@ url = st.text_area(
 #question = "Can you please Summarise this for me:"
 
 # Sidebar for selecting summary type (similar to your previous Lab2)
-summary_type = st.selectbox("Select Summary Type", ["Summarize this document in 100 words", "Summarize this document in 2 connecting paragraphs", "Summarize this document in 5 bullet points"])
+summary_type = st.sidebar.selectbox("Select Summary Type", ["Summarize this document in 100 words", "Summarize this document in 2 connecting paragraphs", "Summarize this document in 5 bullet points"])
 
 # Step 8: Dropdown menu to select output language
 language = st.selectbox("Select Output Language", ["English", "French", "Spanish","Hindi"])
