@@ -46,7 +46,7 @@ url = st.text_area(
 summary_type = st.selectbox("Select Summary Type", ["Summarize this document in 100 words", "Summarize this document in 2 connecting paragraphs", "Summarize this document in 5 bullet points"])
 
 # Step 8: Dropdown menu to select output language
-language = st.selectbox("Select Output Language", ["English", "French", "Spanish"])
+language = st.selectbox("Select Output Language", ["English", "French", "Spanish","Hindi"])
 
 # Step 10: Option to select LLM models
 llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Google"])
