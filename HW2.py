@@ -59,6 +59,8 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 #FOR OPEN_AI
 
+# Create an OpenAI client.
+client = OpenAI(api_key=openai_api_key)
 
 if url: 
 	content = read_url_content(url)
@@ -72,7 +74,6 @@ if url:
             }
         ]
 		if llm_model == "OPENAI":
-			client = OpenAI(api_key=openai_api_key)
 			stream = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
