@@ -32,10 +32,10 @@ url = st.text_area(
 
 	
 # Ask the user for a question type via radibutton ⁠.
-question = "Can you please Summarise this for me:"
+#question = "Can you please Summarise this for me:"
 
 # Sidebar for selecting summary type (similar to your previous Lab2)
-ssummary_type = st.selectbox("Select Summary Type", ["Summarize the document in 100 words", "Summarize the document in 2 connecting paragraphs", "Summarize the document in 5 bullet points"])
+summary_type = st.selectbox("Select Summary Type", ["Summarize this document in 100 words", "Summarize this document in 2 connecting paragraphs", "Summarize this document in 5 bullet points"])
 
 # Step 8: Dropdown menu to select output language
 language = st.selectbox("Select Output Language", ["English", "French", "Spanish"])
@@ -58,11 +58,12 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 if url: 
 	content = read_url_content(url)
-	if content and question:
+	if content and summary_type and language:
+		question = summary_type
 		messages = [
             {
                 "role": "user",
-                "content": f"Here's a document: {content} \n\n---\n\n {question}",
+                "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
             }
         ]
 		stream = client.chat.completions.create(
