@@ -7,7 +7,7 @@ from anthropic.types.message import Message
 import google.generativeai as genai
 
 
-st.title("This is HW 2")
+st.markdown("Enter URL, Select LLM, Select Summary type, Select Language")
 
 
 #Function to read URL Content.
