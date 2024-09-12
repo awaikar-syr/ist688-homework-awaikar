@@ -18,7 +18,7 @@ def read_url_content(url):
 		return None
 
 
-openai_api_key = st.secrets["open_ai_key"] 
+openai_api_key = st.secrets["openai_api_key"] 
 
 
 # Create an OpenAI client.
