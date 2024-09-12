@@ -44,6 +44,7 @@ language = st.selectbox("Select Output Language", ["English", "French", "Spanish
 llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 
+
     # Step 6: Display summary
 #if st.button("Summarize"):
 #        if url:
@@ -60,30 +61,30 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 #FOR OPEN_AI
 
-
-if url: 
-	content = read_url_content(url)
-	
-	if content and summary_type and language:
-		question = summary_type
-		messages_openai = [
-            {
-                "role": "user",
-                "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
-            }]
-		if llm_model == "OPENAI":
-			stream = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages_openai,
-            stream=True,)
-			st.write_stream(stream)
-		elif llm_model =="Claude":
-			#Enter code for Claude using Claude Syntax.
-			st.write("Claude")
-		elif llm_model == "Cohere":
-			#Enter code for Cohere using Cohere Syntax.
-			st.write("Cohere")
-else:
-	
-	st.write("Enter a valid URL")
+if st.button("Summarize"):
+     
+    if url: 
+        content = read_url_content(url)
+        
+        if content and summary_type and language:
+            question = summary_type
+            messages_openai = [
+                {
+                    "role": "user",
+                    "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
+                }]
+            if llm_model == "OPENAI":
+                stream = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages_openai,
+                stream=True,)
+                st.write_stream(stream)
+            elif llm_model =="Claude":
+                #Enter code for Claude using Claude Syntax.
+                st.write("Claude")
+            elif llm_model == "Cohere":
+                #Enter code for Cohere using Cohere Syntax.
+                st.write("Cohere")
+    else:
+         st.write("Enter a valid URL")
 
