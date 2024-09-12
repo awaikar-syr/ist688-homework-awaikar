@@ -2,6 +2,8 @@ import streamlit as st
 from openai import OpenAI
 import requests
 from bs4 import BeautifulSoup
+from anthropic import Anthropic
+from anthropic.types.message import Message
 
 st.title("This is HW 2")
 
@@ -19,10 +21,13 @@ def read_url_content(url):
 
 
 openai_api_key = st.secrets["openai_api_key"] 
-
+claude_api_key = st.secrets["claude_api_key"] 
 
 # Create an OpenAI client.
-client = OpenAI(api_key=openai_api_key)
+clientopenai = OpenAI(api_key=openai_api_key)
+
+# Create an Claude client.
+clientclaude = Anthropic(api_key = claude_api_key)
 
 # Let the user upload a URL ⁠.
 url = st.text_area(
@@ -45,46 +50,51 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
 
 
 
-    # Step 6: Display summary
-#if st.button("Summarize"):
-#        if url:
-#            content = read_url_content(url)
-#            if content:
-#                # Logic to call the selected LLM's API to summarize content
-#                st.write(f"Summary of the URL: {url} (in {language})")
-#                # You'll need to implement the logic for interacting with the LLMs here
 
- #       else:
-#            st.error("Please enter a valid URL.")
+if url: 
+	content = read_url_content(url)
+	
+	if content and summary_type and language:
+		question = summary_type
+		messages_openai = [
+            {
+                "role": "user",
+                "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
+            }
+        ]
+		messages_claude = [{'role': 'user', 
+		"content": f"Here's a document: {content} \n\n---\n\n {question} in {language}"}]
+		
+
+		if llm_model == "OpenAI":
+			stream = clientopenai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages_openai,
+            stream=True,)
+			st.write("Open AI's Response:")
+			st.write_stream(stream)
+		elif llm_model =="Claude":
+			#Enter code for Claude using Claude Syntax.
+			st.write("Claude's  Response:")
+			response: Message = clientclaude.messages.create(
+				max_tokens=256,
+				messages= messages_claude,
+				model="claude-3-haiku-20240307",
+				temperature=0.5,)
+			answer = response.content[0].text
+			st.write(answer)
+			
+		elif llm_model == "Cohere":
+			#Enter code for Cohere using Cohere Syntax.
+			st.write("Cohere's  Response:")
+else:
+	
+	st.write("Enter a valid URL")
 
 
 
-#FOR OPEN_AI
 
-if st.button("Summarize"):
-     
-    if url: 
-        content = read_url_content(url)
-        
-        if content and summary_type and language:
-            question = summary_type
-            messages_openai = [
-                {
-                    "role": "user",
-                    "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
-                }]
-            if llm_model == "OPENAI":
-                stream = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages_openai,
-                stream=True,)
-                st.write_stream(stream)
-            elif llm_model =="Claude":
-                #Enter code for Claude using Claude Syntax.
-                st.write("Claude")
-            elif llm_model == "Cohere":
-                #Enter code for Cohere using Cohere Syntax.
-                st.write("Cohere")
-    else:
-         st.write("Enter a valid URL")
+
+
+
 
