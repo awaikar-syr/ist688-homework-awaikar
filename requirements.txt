@@ -10,3 +10,4 @@ pyngrok
 fitz
 frontend
 ngrok
+pymupdf
