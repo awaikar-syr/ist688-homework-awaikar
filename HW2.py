@@ -74,11 +74,11 @@ if url:
             model="gpt-4o-mini",
             messages=messages_openai,
             stream=True,)
-			st.write("Open AI's Response:")
+			st.write("Open AI gpt-40-mini's Response:")
 			st.write_stream(stream)
 		elif llm_model =="Claude":
 			#Enter code for Claude using Claude Syntax.
-			st.write("Claude's  Response:")
+			st.write("Claude - 3 - Haiku's Response:")
 			response: Message = clientclaude.messages.create(
 				max_tokens=256,
 				messages= messages_claude,
@@ -89,14 +89,14 @@ if url:
 			
 		elif llm_model == "Google":
 			#Enter code for Cohere using Cohere Syntax.
-			st.write("Google's Gemini  Response:")
+			st.write("Google's Gemini 1.5 - Flash  Response:")
 			genai.configure(api_key=google_api_key)
 			model = genai.GenerativeModel('gemini-1.5-flash')
 			response = model.generate_content(messages_google)
 			st.write(response.text)
 else:
 	
-	st.write("Enter a valid URL")
+	st.write("Please check the URL, or enter a new one!")
 
 
 
