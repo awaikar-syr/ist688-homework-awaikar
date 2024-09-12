@@ -4,3 +4,9 @@ requests
 bs4
 anthropic
 google-generativeai
+
+PyPDF2
+pyngrok
+fitz
+frontend
+ngrok
