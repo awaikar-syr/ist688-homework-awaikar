@@ -56,8 +56,14 @@ llm_model = st.sidebar.selectbox("Select LLM", ["OpenAI", "Claude", "Cohere"])
  #       else:
 #            st.error("Please enter a valid URL.")
 
+
+
+#FOR OPEN_AI
+
+
 if url: 
 	content = read_url_content(url)
+	
 	if content and summary_type and language:
 		question = summary_type
 		messages = [
@@ -66,13 +72,24 @@ if url:
                 "content": f"Here's a document: {content} \n\n---\n\n {question} in {language}",
             }
         ]
-		stream = client.chat.completions.create(
+		if llm_model == "OPENAI":
+			stream = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            stream=True,
-        )
-		st.write_stream(stream)
-		
+            stream=True,)
+			st.write_stream(stream)
+		elif llm_model =="Claude":
+			stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            stream=True,)
+			st.write_stream(stream)
+		elif llm_model == "Cohere":
+			stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            stream=True,)
+			st.write_stream(stream)
 else:
 	
 	st.write("Enter a valid URL")
