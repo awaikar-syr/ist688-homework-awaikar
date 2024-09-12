@@ -79,17 +79,11 @@ if url:
             stream=True,)
 			st.write_stream(stream)
 		elif llm_model =="Claude":
-			stream = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            stream=True,)
-			st.write_stream(stream)
+			#Enter code for Claude using Claude Syntax.
+			st.write("Claude")
 		elif llm_model == "Cohere":
-			stream = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            stream=True,)
-			st.write_stream(stream)
+			#Enter code for Cohere using Cohere Syntax.
+			st.write("Cohere")
 else:
 	
 	st.write("Enter a valid URL")
