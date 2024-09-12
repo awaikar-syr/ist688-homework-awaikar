@@ -21,8 +21,7 @@ def read_url_content(url):
 openai_api_key = st.secrets["open_ai_key"] 
 
 
-# Create an OpenAI client.
-client = OpenAI(api_key=openai_api_key)
+
 
 # Let the user upload a URL ⁠.
 url = st.text_area(
@@ -73,6 +72,7 @@ if url:
             }
         ]
 		if llm_model == "OPENAI":
+			client = OpenAI(api_key=openai_api_key)
 			stream = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
