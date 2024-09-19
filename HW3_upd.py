@@ -1,256 +1,290 @@
 import streamlit as st
 import requests
-from openai import OpenAI
 from bs4 import BeautifulSoup
-from mistralai import Mistral
-from anthropic import Anthropic
-import tiktoken  # Tokenizer from OpenAI
+from openai import OpenAI
+#from langchain_ollama import OllamaLLM
+import anthropic
 
+# Title of the Streamlit app
+st.title("📄 Chatbot Interaction")
 
-# Function to read the content from a URL
-def read_url_content(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        soup = BeautifulSoup(response.content, 'html.parser')
-        return soup.get_text()
-    except requests.RequestException as e:
-        st.error(f"Error reading {url}: {e}")
-        return None
+# Fetch the API keys from streamlit secrets
+openai_api_key = st.secrets["openai_api_key"]
+claude_api_key = st.secrets["claude_api_key"]
 
-# Dictionary to map LLM providers to their respective models
-model_options = {
-    "OpenAI": {"basic": "gpt-4o-mini", "advanced": "gpt-4o"},
-    "Claude": {"basic": "claude-3-haiku-20240307", "advanced": "claude-3-5-sonnet-20240620"},
-    "Mistral": {"basic": "open-mistral-7b", "advanced": "mistral-large-2407"},
-}
-
-# Set a maximum token limit for the buffer (you can adjust this based on your needs).
-max_tokens = 5000
-summary_threshold = 5  # Number of messages before we start summarizing
-
-# Function to calculate tokens for a message using OpenAI tokenizer
-def calculate_token_count(messages, model_name="gpt-4o-mini"):
-    encoding = tiktoken.encoding_for_model(model_name)
-    total_tokens = 0
-    for message in messages:
-        total_tokens += len(encoding.encode(message["content"]))
-    return total_tokens
-
-# Truncate conversation history to fit within max_tokens
-def truncate_messages_by_tokens(messages, max_tokens, model_name="gpt-4o-mini"):
-    encoding = tiktoken.encoding_for_model(model_name)
-    total_tokens = 0
-    truncated_messages = []
-
-    # Always retain the last user-assistant pair
-    recent_pair = messages[-2:] if len(messages) >= 2 else messages
-
-    # Calculate the token count for the most recent pair
-    for message in recent_pair:
-        total_tokens += len(encoding.encode(message["content"]))
-
-    # Traverse the older messages in reverse order (newest to oldest)
-    for message in reversed(messages[:-2]):  # Exclude the most recent pair
-        message_token_count = len(encoding.encode(message["content"]))
-
-        # Add message if it doesn't exceed the max_tokens limit
-        if total_tokens + message_token_count <= max_tokens:
-            truncated_messages.insert(0, message)
-            total_tokens += message_token_count
-        else:
-            break
-
-    truncated_messages.extend(recent_pair)
-    return truncated_messages, total_tokens
-
-def summarize_conversation(messages, model_to_use, client):
-    user_messages = [msg["content"]
-                     for msg in messages if msg["role"] == "user"]
-    assistant_messages = [msg["content"]
-                          for msg in messages if msg["role"] == "assistant"]
-    conversation_summary_prompt = f"Summarize this conversation: \n\nUser: {user_messages} \nAssistant: {assistant_messages}"
-
-    # Call LLM to summarize
-    summary_response = client.chat.completions.create(
-        model=model_to_use,
-        messages=[{"role": "system", "content": conversation_summary_prompt}],
-        stream=False,
-    )
-
-    # Extract the summary content from the response structure
-    summary_content = summary_response.choices[0].message.content
-
-    return summary_content
-
-# Separate function for calling OpenAI models
-def call_openai_model(prompt_with_urls, model_name, api_key, chat_history):
-    # Create an OpenAI client
-    client = OpenAI(api_key=api_key)
-    messages_for_llm = chat_history.copy()
-    messages_for_llm[-1]['content'] = prompt_with_urls
-
-    stream = client.chat.completions.create(
-        model=model_name,
-        messages=messages_for_llm,
-        stream=True,
-    )
-
-    return stream
-
-# Separate function for calling Claude models
-def call_claude_model(prompt_with_urls, model_name, api_key, chat_history):
-    anthropic_client = Anthropic(api_key=api_key)
-    messages_for_llm = chat_history.copy()
-    messages_for_llm[-1]['content'] = prompt_with_urls
-
-    stream = anthropic_client.messages.create(
-        model=model_name,
-        messages=messages_for_llm,
-        stream=True,
-        temperature=0.5
-    )
-
-    return stream
-
-# Separate function for calling Mistral models
-def call_mistral_model(prompt_with_urls, model_name, client, chat_history):
-    messages_for_llm = chat_history.copy()
-    messages_for_llm[-1]['content'] = prompt_with_urls
-
-    stream = client.chat.completions.create(
-        model=model_name,
-        messages=messages_for_llm,
-        stream=True,
-    )
-
-    return stream
-
-# Main Streamlit code
-st.title("LAB 03 -- Disha Negi 📄 Chatbot Interaction")
-st.write("Interact with the chatbot!")
-
-# Sidebar options
-st.sidebar.title("Options")
-
-# Input fields for two URLs
-url1 = st.sidebar.text_input("Enter URL 1", value="")
-url2 = st.sidebar.text_input("Enter URL 2", value="")
-
-# Add option to select LLM provider
-llm_provider = st.sidebar.selectbox(
-    "Choose LLM Provider",
-    ("OpenAI", "Claude", "Mistral")
-)
-
-# Checkboxes for advanced models
-use_advanced = st.sidebar.checkbox("Use advanced model", value=False)
-
-# Memory selection options
-memory_type = st.sidebar.selectbox(
-    "Select Conversation Memory Type",
-    ("Buffer of 5 questions", "Conversation Summary", "Buffer of 5000 tokens")
-)
-
+# Set API keys for OpenAI and Anthropic
 client = OpenAI(api_key=st.secrets["openai_api_key"])
 
-# Based on provider selection and use_advanced flag, update model options
-model_to_use = model_options[llm_provider]["advanced" if use_advanced else "basic"]
+# Sidebar elements
+st.sidebar.title("Chat Bot Options")
 
-# Condition to check if at least one URL is provided
-if not url1 and not url2:
-    st.sidebar.warning("Please provide at least one URL to interact with the chatbot.")
+# Conversation behavior options
+behavior = st.sidebar.radio(
+    "Conversation behavior:",
+    (
+        "Keep last 5 questions",
+        "Summarize after 5 interactions",
+        "Limit by token size (5000 tokens)",
+    ),
+)
+
+# Model options for CHATBOT
+selected_llm_for_chatbot = st.sidebar.selectbox(
+    "Choose the model for Chatbot",
+    (
+        "OpenAI: gpt-3.5-turbo",
+        "OpenAI: gpt-4 (Advanced)",
+        "LLaMa: llama3.1-8b",
+        "LLaMa: llama3.1-405b (Advanced)",
+        "Claude: claude-3-haiku-20240307",
+        "Claude: claude-3-5-sonnet-20240620 (Advanced)",
+    ),
+)
+
+if selected_llm_for_chatbot == "OpenAI: gpt-3.5-turbo":
+    model_to_use_for_chatbot = "gpt-3.5-turbo"
+
+elif selected_llm_for_chatbot == "OpenAI: gpt-4 (Advanced)":
+    model_to_use_for_chatbot = "gpt-4"
+
+elif selected_llm_for_chatbot == "LLaMa: llama3.1-8b":
+    model_to_use_for_chatbot = "llama2-7b"
+
+elif selected_llm_for_chatbot == "LLaMa: llama3.1-405b (Advanced)":
+    model_to_use_for_chatbot = "llama2-70b"
+
+elif selected_llm_for_chatbot == "Claude: claude-3-haiku-20240307":
+    model_to_use_for_chatbot = "claude-instant"
+
+elif (
+    selected_llm_for_chatbot == "Claude: claude-3-5-sonnet-20240620 (Advanced)"
+):
+    model_to_use_for_chatbot = "claude-2"
 else:
-    # Set up the session state to hold chatbot messages with a token-based buffer
-    if "chat_history" not in st.session_state:
-        st.session_state["chat_history"] = [
-            {"role": "assistant", "content": "How can I help you?"}
-        ]
-    if "conversation_summary" not in st.session_state:
-        st.session_state["conversation_summary"] = ""  # Initialize summary
+    model_to_use_for_chatbot = None
 
-    # Fetch content from the provided URLs
-    url1_content = read_url_content(url1) if url1 else ""
-    url2_content = read_url_content(url2) if url2 else ""
+# Function to extract text content from a URL
+def extract_text_from_url(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Handle HTTP errors
+        soup = BeautifulSoup(response.content, "html.parser")
+        # Remove script and style elements
+        for script_or_style in soup(["script", "style"]):
+            script_or_style.decompose()
+        return soup.get_text(separator="\n")
+    except requests.RequestException as e:
+        st.error(f"Failed to retrieve URL: {url}. Error: {e}")
+        return ""
 
-    # Display the chatbot conversation
-    st.write("## Chatbot Interaction")
-    for msg in st.session_state.chat_history:
+# Initialize session state variables
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+if "context_text" not in st.session_state:
+    st.session_state["context_text"] = ""
+if "urls" not in st.session_state:
+    st.session_state["urls"] = {"url1": "", "url2": ""}
+
+# Inputs for URLs
+url1 = st.text_input("First URL:", value=st.session_state["urls"]["url1"])
+url2 = st.text_input("Second URL:", value=st.session_state["urls"]["url2"])
+
+# Check if URLs have changed
+if url1 != st.session_state["urls"]["url1"] or url2 != st.session_state["urls"]["url2"]:
+    st.session_state["urls"]["url1"] = url1
+    st.session_state["urls"]["url2"] = url2
+    # Extract text and update context_text
+    text1 = extract_text_from_url(url1) if url1 else ""
+    text2 = extract_text_from_url(url2) if url2 else ""
+    st.session_state["context_text"] = text1 + "\n" + text2
+    # Reset the messages
+    st.session_state["messages"] = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "system",
+            "content": "Your output should end with 'DO YOU WANT MORE INFO?' case sensitive unless you get a 'no' as an input. In which case, you should go back to asking 'How can I help you?' Make sure your answers are simple enough for a 10-year-old to understand.",
+        },
+        {"role": "system", "content": f"Here is some background information:\n{st.session_state['context_text']}"},
+        {"role": "assistant", "content": "How can I help you?"},
+    ]
+
+# If no messages, initialize
+if not st.session_state["messages"]:
+    st.session_state["messages"] = [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "system",
+            "content": "Your output should end with 'DO YOU WANT MORE INFO?' case sensitive unless you get a 'no' as an input. In which case, you should go back to asking 'How can I help you?' Make sure your answers are simple enough for a 10-year-old to understand.",
+        },
+        {"role": "system", "content": f"Here is some background information:\n{st.session_state['context_text']}"},
+        {"role": "assistant", "content": "How can I help you?"},
+    ]
+
+# Function to manage conversation memory
+def manage_memory(messages, behavior):
+
+    if behavior == "Keep last 5 questions":
+        # Keep system messages and last 5 pairs
+        system_messages = [msg for msg in messages if msg["role"] == "system"]
+        conversation = [msg for msg in messages if msg["role"] != "system"]
+        return system_messages + conversation[-10:]  # Last 5 pairs (user and assistant)
+
+    elif behavior == "Summarize after 5 interactions":
+        system_messages = [msg for msg in messages if msg["role"] == "system"]
+        conversation = [msg for msg in messages if msg["role"] != "system"]
+
+        if len(conversation) > 10:  # More than 5 pairs
+            # Summarize the conversation
+            document = "\n".join(
+                [msg["content"] for msg in conversation if msg["role"] == "user"]
+            )
+            instruction = "Summarize this conversation."
+            summary = generate_summary(
+                document, instruction, model_to_use_for_chatbot
+            )
+            st.write("### Conversation Summary")
+            st.write(summary)
+            # Reset conversation keeping the system messages and summary
+            return system_messages + [{"role": "assistant", "content": summary}]
+        
+        else:
+            return messages
+        
+    elif behavior == "Limit by token size (5000 tokens)":
+        system_messages = [msg for msg in messages if msg["role"] == "system"]
+        conversation = [msg for msg in messages if msg["role"] != "system"]
+        token_count = sum([len(msg["content"]) for msg in conversation])  # Rough estimation
+        while token_count > 5000 and conversation:
+            conversation.pop(0)  # Remove oldest messages until under the token limit
+            token_count = sum([len(msg["content"]) for msg in conversation])
+        return system_messages + conversation
+    
+    else:
+        return messages
+
+# Function to generate summary (needed for 'Summarize after 5 interactions')
+def generate_summary(text, instruction, model_to_use):
+    if model_to_use in ["gpt-3.5-turbo", "gpt-4"]:
+        return summarize_with_openai(text, instruction, model_to_use)
+
+    elif model_to_use.startswith("llama"):
+        return summarize_with_llama(text, instruction, model_to_use)
+
+    elif model_to_use.startswith("claude"):
+        return summarize_with_claude(text, instruction, model_to_use)
+
+    else:
+        st.error("Model not supported.")
+        return None
+
+def summarize_with_openai(text, instruction, model):
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that summarizes conversations."},
+        {"role": "user", "content": f"{instruction}\n\n{text}"},
+    ]
+    response = client.chat.completions.create(
+        model=model, messages=messages, max_tokens=500
+    )
+    summary = response.choices[0].message.content
+    return summary # commenting this because I am getting the summary twice
+
+def summarize_with_llama(text, instruction, model):
+    llm = OllamaLLM(model=model)
+    prompt = f"{instruction}\n\n{text}"
+    response = llm(prompt)
+    return response
+
+def summarize_with_claude(text, instruction, model):
+    client = anthropic.Client(api_key=claude_api_key)
+    prompt = f"{anthropic.HUMAN_PROMPT} {instruction}\n\n{text} {anthropic.AI_PROMPT}"
+    response = client.completion(
+        prompt=prompt,
+        stop_sequences=[anthropic.HUMAN_PROMPT],
+        model=model,
+        max_tokens_to_sample=500,
+    )
+    return response["completion"]
+
+# Manage conversation memory
+st.session_state["messages"] = manage_memory(st.session_state["messages"], behavior)
+
+# Display chat history
+for msg in st.session_state["messages"]:
+    if msg["role"] != "system":  # Skip the system messages
         chat_msg = st.chat_message(msg["role"])
         chat_msg.write(msg["content"])
 
-    # Get user input for the chatbot
-    if prompt := st.chat_input("Ask the chatbot a question related to the URLs provided:"):
-        # Add content from the URLs to the prompt
-        prompt_with_urls = f"Refer to the content from the provided URLs in your response. \n\n{url1_content}\n\n{url2_content}\n\n{prompt}"
+# Capturing the user input for the chatbot
+if prompt := st.chat_input("Ask the chatbot a question or interact:"):
+    # Append the user's message to session state
+    st.session_state["messages"].append({"role": "user", "content": prompt})
 
-        # Append the user input to the session state
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
+    # Display user's input in the chat
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        # Display the user input in the chat
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Conversation memory logic based on memory type
-        if memory_type == "Buffer of 5000 tokens":
-            truncated_messages, total_tokens = truncate_messages_by_tokens(
-                st.session_state.chat_history, max_tokens, model_name=model_to_use
-            )
-            st.session_state.chat_history = truncated_messages
-
-        elif memory_type == "Conversation Summary" and len(st.session_state.chat_history) > summary_threshold:
-            st.session_state["conversation_summary"] = summarize_conversation(
-                st.session_state.chat_history, model_to_use, client
-            )
-            st.session_state.chat_history = [
-                {"role": "system", "content": st.session_state["conversation_summary"]}
-            ] + st.session_state.chat_history[-2:]
-
-        elif memory_type == "Buffer of 5 questions" and len(st.session_state.chat_history) > 5:
-            st.session_state["conversation_summary"] = summarize_conversation(
-                st.session_state.chat_history[:5], model_to_use, client
-            )
-            st.session_state.chat_history = [
-                {"role": "system", "content": st.session_state["conversation_summary"]}
-            ] + st.session_state.chat_history[-5:]
-
-        # Generate a response from the selected LLM provider using the appropriate model
-        if llm_provider == "OpenAI":
-            stream = call_openai_model(
-                prompt_with_urls, model_to_use, st.secrets["openai_api_key"], st.session_state.chat_history
-            )
-        elif llm_provider == "Claude":
-            stream = call_claude_model(
-                prompt_with_urls, model_to_use, st.secrets["claude_api_key"], st.session_state.chat_history
-            )
-        elif llm_provider == "Mistral":
-            stream = call_mistral_model(
-                prompt_with_urls, model_to_use, st.secrets["mistral_api_key"], st.session_state.chat_history
-            )
-
-        # Stream the assistant's response
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-
-        # Append the assistant's response to the session state
-        st.session_state.chat_history.append({"role": "assistant", "content": response})
-
-        # Handle follow-up questions
-        if "yes" in prompt.lower():
-            st.session_state.chat_history.append(
-                {"role": "assistant", "content": "Here's more information. Do you want more info?"}
-            )
-            with st.chat_message("assistant"):
-                st.markdown("Here's more information. Do you want more info?")
-        elif "no" in prompt.lower():
-            st.session_state.chat_history.append(
-                {"role": "assistant", "content": "What question can I help with next?"}
-            )
-            with st.chat_message("assistant"):
-                st.markdown("What question can I help with next?")
+    # Function to get chatbot response
+    def get_chatbot_response(messages, model_to_use):
+        if model_to_use in ["gpt-3.5-turbo", "gpt-4"]:
+            return chatbot_response_openai(messages, model_to_use)
+        elif model_to_use.startswith("llama"):
+            return chatbot_response_llama(messages, model_to_use)
+        elif model_to_use.startswith("claude"):
+            return chatbot_response_claude(messages, model_to_use)
         else:
-            follow_up_question = "Do you want more info?"
-            st.session_state.chat_history.append(
-                {"role": "assistant", "content": follow_up_question})
-            with st.chat_message("assistant"):
-                st.markdown(follow_up_question)
+            st.error("Model not supported.")
+            return None
+
+    def chatbot_response_openai(messages, model):
+        response = client.chat.completions.create(
+            model=model, messages=messages
+        )
+        assistant_message = response.choices[0].message.content
+        return assistant_message
+
+    def chatbot_response_llama(messages, model):
+        llm = OllamaLLM(model=model)
+        # Convert messages into a single prompt
+        prompt = ""
+        for message in messages:
+            if message["role"] == "system":
+                prompt += f"System: {message['content']}\n"
+            elif message["role"] == "user":
+                prompt += f"User: {message['content']}\n"
+            elif message["role"] == "assistant":
+                prompt += f"Assistant: {message['content']}\n"
+        prompt += "Assistant:"
+        response = llm(prompt)
+        return response
+
+    def chatbot_response_claude(messages, model):
+        client = anthropic.Client(api_key=claude_api_key)
+        prompt = ""
+        for message in messages:
+            if message["role"] == "system":
+                prompt += f"{anthropic.HUMAN_PROMPT} {message['content']} {anthropic.AI_PROMPT}"
+            elif message["role"] == "user":
+                prompt += f"{anthropic.HUMAN_PROMPT} {message['content']} {anthropic.AI_PROMPT}"
+            elif message["role"] == "assistant":
+                prompt += f"{message['content']}"
+        response = client.completion(
+            prompt=prompt,
+            stop_sequences=[anthropic.HUMAN_PROMPT],
+            model=model,
+            max_tokens_to_sample=500,
+        )
+        return response["completion"]
+
+    # Get assistant's response
+    assistant_message = get_chatbot_response(
+        st.session_state["messages"], model_to_use_for_chatbot
+    )
+
+    # Append the assistant's response to session state
+    st.session_state["messages"].append(
+        {"role": "assistant", "content": assistant_message}
+    )
+
+    # Display assistant's response
+    with st.chat_message("assistant"):
+        st.markdown(assistant_message)
