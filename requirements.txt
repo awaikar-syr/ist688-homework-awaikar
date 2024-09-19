@@ -12,3 +12,4 @@ frontend
 ngrok
 pymupdf
 tiktoken
+mistralai
