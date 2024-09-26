@@ -5,6 +5,7 @@ bs4
 anthropic
 google-generativeai
 
+
 PyPDF2
 pyngrok
 fitz
@@ -13,3 +14,8 @@ ngrok
 pymupdf
 tiktoken
 mistralai
+
+
+pysqlite3-binary
+protobuf==3.20
+chromadb
