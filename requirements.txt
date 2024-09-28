@@ -12,3 +12,11 @@ tiktoken
 mistralai
 pysqlite3-binary
 chromadb
+
+frontend
+ngrok
+
+
+
+
+
