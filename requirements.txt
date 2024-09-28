@@ -16,6 +16,8 @@ chromadb
 frontend
 ngrok
 
+protobuf==3.20
+
 
 
 
