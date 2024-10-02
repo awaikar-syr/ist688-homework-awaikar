@@ -1,5 +1,7 @@
 import streamlit as st
 import HW5
+from HW5 import main
+
 st.set_page_config(page_title= "Homework Manager")
 
 # Show title and description.
@@ -16,7 +18,7 @@ pg = st.navigation([hw1_page, hw2_page, hw3_upd, hw4_page, hw5_page])
 
 pg.run()
 
-print(pg)
+main()
 
 
 
