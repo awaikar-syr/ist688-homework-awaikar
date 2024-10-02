@@ -113,7 +113,7 @@ def get_relevant_info(query, model):
 
     try:
         results = collection.query(
-            query_embeddings = [query_embedding.tolist()],
+            query_embeddings=[query_embedding.tolist()],
             n_results=3
         )
         relevant_texts = results['documents'][0]
@@ -188,11 +188,11 @@ def main():
     if 'collection' not in st.session_state:
         st.session_state.collection = None
 
-    st.sidebar.title("Select Model for Chatbot")
+    st.sidebar.title("Model Selection")
     selected_model = st.sidebar.radio(
         "Choose an LLM:", ("OpenAI GPT-4", "Anthropic Claude", "Google Gemini"))
 
-    st.title("Ankit Chatbot")
+    st.title("iSchool Chatbot")
 
     if not st.session_state.system_ready:
         with st.spinner("Processing documents and preparing the system..."):
