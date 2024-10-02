@@ -18,7 +18,8 @@ pg = st.navigation([hw1_page, hw2_page, hw3_upd, hw4_page, hw5_page])
 
 pg.run()
 
-main()
+if pg == st.Page("HW5.py", title="Homework 5", default=True):
+    main()
 
 
 
