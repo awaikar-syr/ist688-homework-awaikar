@@ -55,7 +55,7 @@ def extract_html_from_zip(zip_path):
 # Function to create the ChromaDB collection
 def create_hw4_collection():
     if 'HW_URL_Collection' not in st.session_state:
-        persist_directory = os.path.join(os.getcwd(), "db_chroma")
+        persist_directory = os.path.join(os.getcwd(), "db_chroma2")
         client = chromadb.PersistentClient(path=persist_directory)
         collection = client.get_or_create_collection("HW_URL_Collection")
 
@@ -140,7 +140,7 @@ def get_chatbot_response(query, context, conversation_memory, model):
         ]
         try:
             response = st.session_state.openai_client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=messages,
                 stream=True
             )
@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
 def delete_existing_databases():
     # Define the directory where the database is stored
-    persist_directory = os.path.join(os.getcwd(), "db_chroma") 
+    persist_directory = os.path.join(os.getcwd(), "db_chroma2") 
 
     # Check if the database directory exists
     if os.path.exists(persist_directory):

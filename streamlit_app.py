@@ -12,9 +12,10 @@ hw2_page = st.Page("HW2.py", title="Homework 2")
 hw3_upd = st.Page("HW3_upd.py", title="Homework 3")
 hw4_page = st.Page("HW4.py", title="Homework 4")
 hw5_page = st.Page("HW5_upd.py", title="Homework 5", default=True)
+hw5l_page = st.Page("HW5.py", title="Homework 5l")
 
 
-pg = st.navigation([hw1_page, hw2_page, hw3_upd, hw4_page, hw5_page])
+pg = st.navigation([hw1_page, hw2_page, hw3_upd, hw4_page, hw5_page,hw5l_page])
 
 pg.run()
 
