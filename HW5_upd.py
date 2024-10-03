@@ -269,3 +269,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+import os
+import shutil
+import streamlit as st
+
+def delete_existing_databases():
+    # Define the directory where the database is stored
+    persist_directory = os.path.join(os.getcwd(), "chroma_db")  # Replace "chroma_db" with your database folder
+
+    # Check if the database directory exists
+    if os.path.exists(persist_directory):
+        # Delete the directory and all its contents
+        try:
+            shutil.rmtree(persist_directory)
+            st.success("All existing databases have been deleted successfully.")
+        except Exception as e:
+            st.error(f"Error deleting the database directory: {str(e)}")
+    else:
+        st.info("No existing databases found to delete.")
+
+# Call the function to delete existing databases
+
