@@ -1,6 +1,6 @@
 import streamlit as st
 import HW5
-from HW5_upd import delete_existing_databases
+from HW5_upd import main, delete_existing_databases
 
 st.set_page_config(page_title= "Homework Manager")
 
@@ -19,7 +19,6 @@ pg = st.navigation([hw1_page, hw2_page, hw3_upd, hw4_page, hw5_page])
 pg.run()
 
 if pg == hw5_page:
-    delete_existing_databases()
-
+    main()
 
 

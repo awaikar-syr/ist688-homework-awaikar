@@ -9,6 +9,8 @@ import zipfile
 import tempfile
 from collections import deque
 import numpy as np
+import os
+import shutil
 
 # Workaround for sqlite3 issue in Streamlit Cloud
 __import__('pysqlite3')
@@ -53,7 +55,7 @@ def extract_html_from_zip(zip_path):
 # Function to create the ChromaDB collection
 def create_hw4_collection():
     if 'HW_URL_Collection' not in st.session_state:
-        persist_directory = os.path.join(os.getcwd(), "chroma_db")
+        persist_directory = os.path.join(os.getcwd(), "db_chroma")
         client = chromadb.PersistentClient(path=persist_directory)
         collection = client.get_or_create_collection("HW_URL_Collection")
 
@@ -271,12 +273,10 @@ if __name__ == "__main__":
     main()
 
 
-import os
-import shutil
 
 def delete_existing_databases():
     # Define the directory where the database is stored
-    persist_directory = os.path.join(os.getcwd(), "chroma_db")  # Replace "chroma_db" with your database folder
+    persist_directory = os.path.join(os.getcwd(), "db_chroma") 
 
     # Check if the database directory exists
     if os.path.exists(persist_directory):
@@ -288,6 +288,4 @@ def delete_existing_databases():
             st.error(f"Error deleting the database directory: {str(e)}")
     else:
         st.info("No existing databases found to delete.")
-
-# Call the function to delete existing databases
 
