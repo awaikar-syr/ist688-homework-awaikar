@@ -192,10 +192,10 @@ def main():
     selected_model = st.sidebar.radio(
         "Choose an LLM:", ("OpenAI GPT-4", "Anthropic Claude", "Google Gemini"))
 
-    st.title("iSchool Chatbot")
+    st.title("Chatbot for iSchool Clubs")
 
     if not st.session_state.system_ready:
-        with st.spinner("Processing documents and preparing the system..."):
+        with st.spinner("Creating a collection, and processing documents..."):
             st.session_state.collection = create_hw4_collection()
             if st.session_state.collection:
                 st.session_state.system_ready = True
