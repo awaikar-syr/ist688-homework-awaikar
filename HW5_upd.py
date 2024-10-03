@@ -273,7 +273,6 @@ if __name__ == "__main__":
 
 import os
 import shutil
-import streamlit as st
 
 def delete_existing_databases():
     # Define the directory where the database is stored
