@@ -1,6 +1,6 @@
 import streamlit as st
 import HW5
-from HW5_upd import main, delete_existing_databases
+from HW5_upd import main
 
 st.set_page_config(page_title= "Homework Manager")
 
