@@ -44,7 +44,7 @@ def extract_html_from_zip(zip_path):
 
 def create_hw4_collection():
     if 'HW_URL_Collection' not in st.session_state:
-        persist_directory = os.path.join(os.getcwd(), "chroma_db")
+        persist_directory = os.path.join(os.getcwd(), "chroma_db2")
         client = chromadb.PersistentClient(path=persist_directory)
         collection = client.get_or_create_collection("HW_URL_Collection")
 
