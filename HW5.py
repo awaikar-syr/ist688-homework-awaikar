@@ -9,6 +9,8 @@ import zipfile
 import tempfile
 from collections import deque
 import numpy as np
+import os
+import shutil
 
 # Workaround for sqlite3 issue in Streamlit Cloud
 __import__('pysqlite3')
@@ -16,24 +18,22 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import chromadb
 
-st.title("HW 5")
-
 # Function to ensure the OpenAI client is initialized
 def ensure_openai_client():
     if 'openai_client' not in st.session_state:
-        api_key = st.secrets["OPENAI_KEY"]
+        api_key = st.secrets["openai_api_key"]
         st.session_state.openai_client = OpenAI(api_key=api_key)
 
 # Function to ensure the Anthropic client is initialized
 def ensure_anthropic_client():
     if 'anthropic_client' not in st.session_state:
-        api_key = st.secrets["CLAUDE_KEY"]
+        api_key = st.secrets["claude_api_key"]
         st.session_state.anthropic_client = Anthropic(api_key=api_key)
 
 # Function to ensure the Google AI client is initialized
 def ensure_google_ai_client():
     if 'google_ai_client' not in st.session_state:
-        api_key = st.secrets["g_key"]
+        api_key = st.secrets["gemini_api_key"]
         genai.configure(api_key=api_key)
         st.session_state.google_ai_client = genai
 
@@ -55,7 +55,7 @@ def extract_html_from_zip(zip_path):
 # Function to create the ChromaDB collection
 def create_hw4_collection():
     if 'HW_URL_Collection' not in st.session_state:
-        persist_directory = os.path.join(os.getcwd(), "chroma_db")
+        persist_directory = os.path.join(os.getcwd(), "db_chroma2")
         client = chromadb.PersistentClient(path=persist_directory)
         collection = client.get_or_create_collection("HW_URL_Collection")
 
@@ -140,7 +140,7 @@ def get_chatbot_response(query, context, conversation_memory, model):
         ]
         try:
             response = st.session_state.openai_client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=messages,
                 stream=True
             )
@@ -180,91 +180,112 @@ def get_chatbot_response(query, context, conversation_memory, model):
             st.error(f"Error getting Gemini response: {str(e)}")
         return None
 
-# The main logic of the application is now at the global scope
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-if 'conversation_memory' not in st.session_state:
-    st.session_state.conversation_memory = deque(maxlen=5)
-if 'system_ready' not in st.session_state:
-    st.session_state.system_ready = False
-if 'collection' not in st.session_state:
-    st.session_state.collection = None
+def main():
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'conversation_memory' not in st.session_state:
+        st.session_state.conversation_memory = deque(maxlen=5)
+    if 'system_ready' not in st.session_state:
+        st.session_state.system_ready = False
+    if 'collection' not in st.session_state:
+        st.session_state.collection = None
 
-st.sidebar.title("Model Selection")
-selected_model = st.sidebar.radio(
-    "Choose an LLM:", ("OpenAI GPT-4", "Anthropic Claude", "Google Gemini"))
+    st.sidebar.title("Model Selection")
+    selected_model = st.sidebar.radio(
+        "Choose an LLM:", ("OpenAI GPT-4", "Anthropic Claude", "Google Gemini"))
 
-st.title("iSchool Chatbot")
+    st.title("Chatbot for iSchool Clubs")
 
-if not st.session_state.system_ready:
-    with st.spinner("Processing documents and preparing the system..."):
-        st.session_state.collection = create_hw4_collection()
-        if st.session_state.collection:
-            st.session_state.system_ready = True
-            st.success("AI ChatBot is Ready!")
-        else:
-            st.error("Failed to create or load the document collection. Please check the zip file and try again.")
+    if not st.session_state.system_ready:
+        with st.spinner("Creating a collection, and processing documents..."):
+            st.session_state.collection = create_hw4_collection()
+            if st.session_state.collection:
+                st.session_state.system_ready = True
+                st.success("AI ChatBot is Ready!")
+            else:
+                st.error("Failed to create or load the document collection. Please check the zip file and try again.")
 
-if st.session_state.system_ready and st.session_state.collection:
-    st.subheader(f"Chat with the AI Assistant (Using {selected_model})")
+    if st.session_state.system_ready and st.session_state.collection:
+        st.subheader(f"Chat with the AI Assistant (Using {selected_model})")
 
-    for message in st.session_state.chat_history:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
 
-    user_input = st.chat_input("Ask a question about the documents:")
+        user_input = st.chat_input("Ask a question about the documents:")
 
-    if user_input:
-        with st.chat_message("user"):
-            st.markdown(user_input)
+        if user_input:
+            with st.chat_message("user"):
+                st.markdown(user_input)
 
-        relevant_texts, relevant_docs = get_relevant_info(user_input, selected_model)
+            relevant_texts, relevant_docs = get_relevant_info(user_input, selected_model)
 
-        response_stream = get_chatbot_response(
-            user_input, relevant_texts, st.session_state.conversation_memory, selected_model)
+            response_stream = get_chatbot_response(
+                user_input, relevant_texts, st.session_state.conversation_memory, selected_model)
 
-        with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            full_response = ""
-            if selected_model == "OpenAI GPT-4":
-                for chunk in response_stream:
-                    if chunk.choices[0].delta.content is not None:
-                        full_response += chunk.choices[0].delta.content
-                        response_placeholder.markdown(full_response + "▌")
-            elif selected_model == "Anthropic Claude":
-                for chunk in response_stream:
-                    chunk_type = getattr(chunk, 'type', None)
-                    if chunk_type == 'content_block_delta':
-                        if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
-                            full_response += chunk.delta.text
+            with st.chat_message("assistant"):
+                response_placeholder = st.empty()
+                full_response = ""
+                if selected_model == "OpenAI GPT-4":
+                    for chunk in response_stream:
+                        if chunk.choices[0].delta.content is not None:
+                            full_response += chunk.choices[0].delta.content
                             response_placeholder.markdown(full_response + "▌")
-                    elif chunk_type == 'message_delta':
-                        if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
-                            for content_block in chunk.delta.content:
-                                if content_block.type == 'text':
-                                    full_response += content_block.text
-                                    response_placeholder.markdown(full_response + "▌")
-            elif selected_model == "Google Gemini":
-                for chunk in response_stream:
-                    full_response += chunk.text
-                    response_placeholder.markdown(full_response + "▌")
-            response_placeholder.markdown(full_response)
+                elif selected_model == "Anthropic Claude":
+                    for chunk in response_stream:
+                        chunk_type = getattr(chunk, 'type', None)
+                        if chunk_type == 'content_block_delta':
+                            if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
+                                full_response += chunk.delta.text
+                                response_placeholder.markdown(full_response + "▌")
+                        elif chunk_type == 'message_delta':
+                            if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'content'):
+                                for content_block in chunk.delta.content:
+                                    if content_block.type == 'text':
+                                        full_response += content_block.text
+                                        response_placeholder.markdown(full_response + "▌")
+                elif selected_model == "Google Gemini":
+                    for chunk in response_stream:
+                        full_response += chunk.text
+                        response_placeholder.markdown(full_response + "▌")
+                response_placeholder.markdown(full_response)
 
-        st.session_state.chat_history.append(
-            {"role": "user", "content": user_input})
-        st.session_state.chat_history.append(
-            {"role": "assistant", "content": full_response})
+            st.session_state.chat_history.append(
+                {"role": "user", "content": user_input})
+            st.session_state.chat_history.append(
+                {"role": "assistant", "content": full_response})
 
-        st.session_state.conversation_memory.append({
-            "question": user_input,
-            "answer": full_response
-        })
+            st.session_state.conversation_memory.append({
+                "question": user_input,
+                "answer": full_response
+            })
 
-        with st.expander("Relevant documents used"):
-            for doc in relevant_docs:
-                st.write(f"- {doc}")
+            with st.expander("Relevant documents used"):
+                for doc in relevant_docs:
+                    st.write(f"- {doc}")
 
-elif not st.session_state.system_ready:
-    st.info("The system is still preparing. Please wait...")
-else:
-    st.error("Failed to create or load the document collection. Please check the zip file and try again.")
+    elif not st.session_state.system_ready:
+        st.info("The system is still preparing. Please wait...")
+    else:
+        st.error("Failed to create or load the document collection. Please check the zip file and try again.")
+
+if __name__ == "__main__":
+    main()
+
+
+
+def delete_existing_databases():
+    # Define the directory where the database is stored
+    persist_directory = os.path.join(os.getcwd(), "db_chroma2") 
+
+    # Check if the database directory exists
+    if os.path.exists(persist_directory):
+        # Delete the directory and all its contents
+        try:
+            shutil.rmtree(persist_directory)
+            st.success("All existing databases have been deleted successfully.")
+        except Exception as e:
+            st.error(f"Error deleting the database directory: {str(e)}")
+    else:
+        st.info("No existing databases found to delete.")
+
